@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MyHome Overview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles/main.css" />
+  </head>
+  <body>
+    <main class="viewport">
+      <section class="phone-frame">
+        <header class="app-header">
+          <div class="status-bar">
+            <span class="status-time">09:41</span>
+            <div class="status-icons" aria-hidden="true">
+              <span class="icon signal"></span>
+              <span class="icon wifi"></span>
+              <span class="icon battery"></span>
+            </div>
+          </div>
+          <div class="top-bar">
+            <div>
+              <p class="welcome">Welkom terug</p>
+              <h1 class="title">Jouw woningoverzicht</h1>
+            </div>
+            <button class="avatar" type="button" aria-label="Open profiel">
+              <span>JD</span>
+            </button>
+          </div>
+          <div class="search">
+            <input type="search" placeholder="Zoek naar spullen..." aria-label="Zoek naar items" />
+          </div>
+        </header>
+        <section class="blueprint-panel" aria-label="Interactieve blauwdruk" data-blueprint>
+          <header class="blueprint-header">
+            <div>
+              <h2 class="blueprint-title">Blauwdruk</h2>
+              <p class="blueprint-subtitle">Scroll of knijp om verder in te zoomen</p>
+            </div>
+            <div class="blueprint-controls" role="group" aria-label="Zoom bediening">
+              <button
+                type="button"
+                class="blueprint-button"
+                data-blueprint-zoom-out
+                aria-label="Zoom uit"
+              >
+                −
+              </button>
+              <button
+                type="button"
+                class="blueprint-button"
+                data-blueprint-reset
+                aria-label="Herstel beginstand"
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                class="blueprint-button"
+                data-blueprint-zoom-in
+                aria-label="Zoom in"
+              >
+                +
+              </button>
+            </div>
+          </header>
+          <div class="blueprint-viewport" data-blueprint-viewport>
+            <div class="blueprint-scene" data-blueprint-scene>
+              <div class="layer layer-home">
+                <h3>Huis</h3>
+                <p>Zoom in om kamers te bekijken</p>
+              </div>
+              <div class="layer layer-garage">
+                <h3>Garage</h3>
+                <p>Voertuigen en gereedschap</p>
+              </div>
+              <div class="layer layer-car">
+                <h3>Auto</h3>
+                <p>Bekijk kofferruimte en dashboard</p>
+              </div>
+              <div class="layer layer-garden">
+                <h3>Tuin</h3>
+                <p>Komende functies voor buitenopslag</p>
+              </div>
+            </div>
+            <p class="blueprint-instructions">
+              Gebruik het scrollwiel of een knijpbeweging om te zoomen. Sleep om te verplaatsen.
+            </p>
+          </div>
+        </section>
+        <section class="quick-actions" aria-label="Snelle acties">
+          <button type="button" class="action primary">
+            <span class="action-icon">＋</span>
+            <span class="action-label">Nieuw item</span>
+          </button>
+          <button type="button" class="action">
+            <span class="action-icon">📷</span>
+            <span class="action-label">Foto maken</span>
+          </button>
+          <button type="button" class="action">
+            <span class="action-icon">✨</span>
+            <span class="action-label">Genereer beeld</span>
+          </button>
+        </section>
+        <nav class="bottom-nav" aria-label="Hoofdmenu">
+          <button type="button" class="nav-button active">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-label">Overzicht</span>
+          </button>
+          <button type="button" class="nav-button">
+            <span class="nav-icon">📦</span>
+            <span class="nav-label">Inventaris</span>
+          </button>
+          <button type="button" class="nav-button">
+            <span class="nav-icon">🛒</span>
+            <span class="nav-label">Suggesties</span>
+          </button>
+          <button type="button" class="nav-button">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-label">Instellingen</span>
+          </button>
+        </nav>
+      </section>
+    </main>
+    <script type="module" src="scripts/main.js"></script>
+  </body>
+</html>

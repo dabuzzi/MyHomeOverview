@@ -5,6 +5,13 @@ simuleert een mobiele lay-out met een menubalk en een blauwdrukpaneel waarop de
 gebruiker straks kan inzoomen naar huis, garage en auto.
 
 ## Inhoud
+
+- `index.html` — statische HTML-pagina met homeschermstructuur, styling en interactieve logica.
+
+## Gebruik
+Open `index.html` in een moderne browser. Alle styling en interacties zijn inline
+geïntegreerd zodat het bestand op zichzelf staat.
+
 - `index.html` — statische HTML-pagina met de homeschermstructuur.
 - `styles/main.css` — stijlen voor het telefoonframe, navigatie en blauwdruk.
 
@@ -12,3 +19,4 @@ gebruiker straks kan inzoomen naar huis, garage en auto.
 Open `index.html` in een moderne browser. De pagina is responsief en blijft in
 telefoonverhouding (9:19.5) zodat hij representatief is voor de Android-app die
 later gebouwd wordt.
+

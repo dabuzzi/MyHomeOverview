@@ -1,205 +1,174 @@
-const blueprintRoot = document.querySelector('[data-blueprint]');
+const viewport = document.querySelector('[data-slider-viewport]');
+const track = viewport?.querySelector('[data-slider-track]');
+const slides = track ? Array.from(track.children) : [];
+const prevButton = document.querySelector('[data-slider-prev]');
+const nextButton = document.querySelector('[data-slider-next]');
+const dotButtons = Array.from(document.querySelectorAll('[data-slider-dot]'));
 
-if (blueprintRoot) {
-  const viewport = blueprintRoot.querySelector('[data-blueprint-viewport]');
-  const scene = blueprintRoot.querySelector('[data-blueprint-scene]');
-  const zoomInButton = blueprintRoot.querySelector('[data-blueprint-zoom-in]');
-  const zoomOutButton = blueprintRoot.querySelector('[data-blueprint-zoom-out]');
-  const resetButton = blueprintRoot.querySelector('[data-blueprint-reset]');
-
-  if (!viewport || !scene) {
-    return;
-  }
-
-  const state = {
-    scale: 1,
-    minScale: 1,
-    maxScale: 3,
-    translateX: 0,
-    translateY: 0,
-  };
-
-  const pointerPositions = new Map();
-  let lastSinglePointer = null;
-  let lastPinchDistance = null;
-  let lastPinchCenter = null;
+if (viewport && track && slides.length) {
+  let currentIndex = 0;
+  let startX = 0;
+  let currentX = 0;
+  let isDragging = false;
+  let activePointerId = null;
+  let viewportWidth = viewport.clientWidth;
 
   const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
-  const applyTransform = () => {
-    scene.style.transform = `translate(${state.translateX}px, ${state.translateY}px) scale(${state.scale})`;
+  const updateDots = () => {
+    dotButtons.forEach((button, index) => {
+      const isActive = index === currentIndex;
+      button.setAttribute('aria-selected', String(isActive));
+      button.tabIndex = isActive ? 0 : -1;
+    });
   };
 
-  const setScale = (nextScale, center) => {
-    const targetScale = clamp(nextScale, state.minScale, state.maxScale);
-    const currentScale = state.scale;
+  const updateButtons = () => {
+    if (prevButton) {
+      prevButton.disabled = currentIndex === 0;
+    }
+    if (nextButton) {
+      nextButton.disabled = currentIndex === slides.length - 1;
+    }
+  };
 
-    if (targetScale === currentScale) {
+  const setTransform = (offsetPx) => {
+    track.style.transform = `translateX(${offsetPx}px)`;
+  };
+
+  const snapToIndex = () => {
+    viewportWidth = viewport.clientWidth;
+    setTransform(-currentIndex * viewportWidth);
+    updateDots();
+    updateButtons();
+  };
+
+  const goToIndex = (index) => {
+    const nextIndex = clamp(index, 0, slides.length - 1);
+    if (nextIndex === currentIndex) {
+      snapToIndex();
       return;
     }
-
-    const rect = viewport.getBoundingClientRect();
-    const cx = center?.x ?? rect.width / 2;
-    const cy = center?.y ?? rect.height / 2;
-
-    const originX = (cx - state.translateX) / currentScale;
-    const originY = (cy - state.translateY) / currentScale;
-
-    state.scale = targetScale;
-    state.translateX = cx - originX * targetScale;
-    state.translateY = cy - originY * targetScale;
-    applyTransform();
+    currentIndex = nextIndex;
+    snapToIndex();
   };
 
-  const resetTransform = () => {
-    state.scale = 1;
-    state.translateX = 0;
-    state.translateY = 0;
-    applyTransform();
-  };
+  const handlePointerDown = (event) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
 
-  const updatePan = (dx, dy) => {
-    state.translateX += dx;
-    state.translateY += dy;
-    applyTransform();
-  };
+    isDragging = true;
+    activePointerId = event.pointerId;
+    startX = event.clientX;
+    currentX = startX;
+    viewportWidth = viewport.clientWidth;
+    track.classList.add('is-dragging');
+    track.style.transition = 'none';
 
-  const getPinchMetrics = () => {
-    const pointers = Array.from(pointerPositions.values());
-    if (pointers.length < 2) return null;
-
-    const [a, b] = pointers;
-    const center = {
-      x: (a.x + b.x) / 2,
-      y: (a.y + b.y) / 2,
-    };
-    const distance = Math.hypot(a.x - b.x, a.y - b.y);
-
-    return { center, distance };
-  };
-
-  viewport.addEventListener('wheel', (event) => {
-    event.preventDefault();
-    const zoomIntensity = 0.0014;
-    const scaleFactor = Math.exp(-event.deltaY * zoomIntensity);
-    const rect = viewport.getBoundingClientRect();
-    const center = {
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
-    };
-
-    setScale(state.scale * scaleFactor, center);
-  }, { passive: false });
-
-  viewport.addEventListener('pointerdown', (event) => {
-    viewport.setPointerCapture(event.pointerId);
-    pointerPositions.set(event.pointerId, { x: event.clientX, y: event.clientY });
-
-    if (pointerPositions.size === 1) {
-      lastSinglePointer = { x: event.clientX, y: event.clientY };
-      viewport.classList.add('is-dragging');
-    } else if (pointerPositions.size === 2) {
-      const metrics = getPinchMetrics();
-      lastPinchDistance = metrics?.distance ?? null;
-      lastPinchCenter = metrics?.center ?? null;
-      viewport.classList.add('is-dragging');
+    try {
+      viewport.setPointerCapture(event.pointerId);
+    } catch (error) {
+      // Ignore if pointer capture is not supported
     }
-  });
+  };
 
-  viewport.addEventListener('pointermove', (event) => {
-    if (!pointerPositions.has(event.pointerId)) {
-      return;
-    }
+  const handlePointerMove = (event) => {
+    if (!isDragging || event.pointerId !== activePointerId) return;
 
-    pointerPositions.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    currentX = event.clientX;
+    const delta = currentX - startX;
+    setTransform(-currentIndex * viewportWidth + delta);
+  };
 
-    if (pointerPositions.size === 1 && lastSinglePointer) {
-      const position = pointerPositions.get(event.pointerId);
-      const dx = position.x - lastSinglePointer.x;
-      const dy = position.y - lastSinglePointer.y;
-      lastSinglePointer = { ...position };
-      updatePan(dx, dy);
-    }
+  const endDrag = (event) => {
+    if (!isDragging || (event && event.pointerId !== activePointerId)) return;
 
-    if (pointerPositions.size >= 2) {
-      const metrics = getPinchMetrics();
-      if (!metrics) return;
+    const delta = currentX - startX;
+    const threshold = Math.min(160, viewportWidth * 0.2);
 
-      const rect = viewport.getBoundingClientRect();
-      const centerRelative = {
-        x: metrics.center.x - rect.left,
-        y: metrics.center.y - rect.top,
-      };
+    isDragging = false;
+    activePointerId = null;
+    track.classList.remove('is-dragging');
+    track.style.transition = '';
 
-      if (lastPinchDistance) {
-        const distanceDelta = metrics.distance / lastPinchDistance;
-        setScale(state.scale * distanceDelta, centerRelative);
+    if (event) {
+      try {
+        viewport.releasePointerCapture(event.pointerId);
+      } catch (error) {
+        // Ignore if pointer capture cannot be released
       }
-
-      if (lastPinchCenter) {
-        const centerDeltaX = metrics.center.x - lastPinchCenter.x;
-        const centerDeltaY = metrics.center.y - lastPinchCenter.y;
-        updatePan(centerDeltaX, centerDeltaY);
-      }
-
-      lastPinchDistance = metrics.distance;
-      lastPinchCenter = metrics.center;
     }
-  });
 
-  const endPointerInteraction = (event) => {
-    pointerPositions.delete(event.pointerId);
-    viewport.releasePointerCapture(event.pointerId);
-
-    if (pointerPositions.size === 1) {
-      const remaining = Array.from(pointerPositions.values())[0];
-      lastSinglePointer = { ...remaining };
+    if (delta < -threshold) {
+      goToIndex(currentIndex + 1);
+    } else if (delta > threshold) {
+      goToIndex(currentIndex - 1);
     } else {
-      lastSinglePointer = null;
-    }
-
-    if (pointerPositions.size < 2) {
-      lastPinchDistance = null;
-      lastPinchCenter = null;
-    }
-
-    if (pointerPositions.size === 0) {
-      viewport.classList.remove('is-dragging');
+      snapToIndex();
     }
   };
 
-  viewport.addEventListener('pointerup', endPointerInteraction);
-  viewport.addEventListener('pointercancel', endPointerInteraction);
+  viewport.addEventListener('pointerdown', handlePointerDown);
+  viewport.addEventListener('pointermove', handlePointerMove);
+  viewport.addEventListener('pointerup', endDrag);
+  viewport.addEventListener('pointercancel', endDrag);
   viewport.addEventListener('pointerleave', (event) => {
-    if (!viewport.hasPointerCapture(event.pointerId)) {
-      pointerPositions.delete(event.pointerId);
+    if (isDragging) {
+      endDrag(event);
     }
   });
 
-  zoomInButton?.addEventListener('click', () => {
-    const rect = viewport.getBoundingClientRect();
-    setScale(state.scale * 1.2, { x: rect.width / 2, y: rect.height / 2 });
+  const handleKeyNavigation = (event) => {
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'PageDown':
+        event.preventDefault();
+        goToIndex(currentIndex + 1);
+        break;
+      case 'ArrowLeft':
+      case 'PageUp':
+        event.preventDefault();
+        goToIndex(currentIndex - 1);
+        break;
+      case 'Home':
+        event.preventDefault();
+        goToIndex(0);
+        break;
+      case 'End':
+        event.preventDefault();
+        goToIndex(slides.length - 1);
+        break;
+      default:
+        break;
+    }
+  };
+
+  viewport.addEventListener('keydown', handleKeyNavigation);
+  viewport.tabIndex = 0;
+  viewport.setAttribute('role', 'region');
+  viewport.setAttribute('aria-roledescription', 'carrousel');
+
+  dotButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const index = Number.parseInt(button.dataset.sliderDot ?? '0', 10);
+      goToIndex(index);
+    });
   });
 
-  zoomOutButton?.addEventListener('click', () => {
-    const rect = viewport.getBoundingClientRect();
-    setScale(state.scale / 1.2, { x: rect.width / 2, y: rect.height / 2 });
+  if (prevButton) {
+    prevButton.addEventListener('click', () => {
+      goToIndex(currentIndex - 1);
+    });
+  }
+
+  if (nextButton) {
+    nextButton.addEventListener('click', () => {
+      goToIndex(currentIndex + 1);
+    });
+  }
+
+  window.addEventListener('resize', () => {
+    snapToIndex();
   });
 
-  resetButton?.addEventListener('click', () => {
-    resetTransform();
-  });
-
-  viewport.addEventListener('dblclick', (event) => {
-    event.preventDefault();
-    const rect = viewport.getBoundingClientRect();
-    const center = {
-      x: event.clientX - rect.left,
-      y: event.clientY - rect.top,
-    };
-
-    setScale(state.scale * 1.4, center);
-  });
-
-  applyTransform();
+  snapToIndex();
 }

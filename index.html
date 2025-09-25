@@ -13,120 +13,134 @@
     <link rel="stylesheet" href="styles/main.css" />
   </head>
   <body>
-    <main class="viewport">
-      <section class="phone-frame">
-        <header class="app-header">
-          <div class="status-bar">
-            <span class="status-time">09:41</span>
-            <div class="status-icons" aria-hidden="true">
-              <span class="icon signal"></span>
-              <span class="icon wifi"></span>
-              <span class="icon battery"></span>
-            </div>
-          </div>
-          <div class="top-bar">
-            <div>
-              <p class="welcome">Welkom terug</p>
-              <h1 class="title">Jouw woningoverzicht</h1>
-            </div>
-            <button class="avatar" type="button" aria-label="Open profiel">
-              <span>JD</span>
-            </button>
-          </div>
-          <div class="search">
-            <input type="search" placeholder="Zoek naar spullen..." aria-label="Zoek naar items" />
-          </div>
-        </header>
-        <section class="blueprint-panel" aria-label="Interactieve blauwdruk" data-blueprint>
-          <header class="blueprint-header">
-            <div>
-              <h2 class="blueprint-title">Blauwdruk</h2>
-              <p class="blueprint-subtitle">Scroll of knijp om verder in te zoomen</p>
-            </div>
-            <div class="blueprint-controls" role="group" aria-label="Zoom bediening">
-              <button
-                type="button"
-                class="blueprint-button"
-                data-blueprint-zoom-out
-                aria-label="Zoom uit"
+    <main class="slider-app">
+      <h1 class="visually-hidden">MyHome overzicht</h1>
+      <p class="sr-instructions" id="swipe-instructions">
+        Veeg of sleep horizontaal om tussen huis, tuin en garage te wisselen. Gebruik de
+        pijltjestoetsen of de knoppen om te navigeren.
+      </p>
+      <section
+        class="slider-viewport"
+        aria-labelledby="swipe-instructions"
+        data-slider-viewport
+      >
+        <div class="slider-track" data-slider-track>
+          <article class="slide" data-location="huis">
+            <figure class="blueprint-figure" aria-labelledby="title-huis">
+              <svg
+                class="blueprint-image"
+                viewBox="0 0 480 480"
+                role="img"
+                aria-labelledby="title-huis desc-huis"
               >
-                −
-              </button>
-              <button
-                type="button"
-                class="blueprint-button"
-                data-blueprint-reset
-                aria-label="Herstel beginstand"
+                <title id="title-huis">Doorsnede van een huis</title>
+                <desc id="desc-huis">
+                  Een blauwdrukstijl van een woning met twee verdiepingen, trap en interieur.
+                </desc>
+                <rect x="20" y="200" width="440" height="240" rx="12" class="bp-glow" />
+                <path
+                  d="M20 200 L240 40 L460 200"
+                  class="bp-glow"
+                  stroke-linejoin="round"
+                />
+                <line x1="20" y1="320" x2="460" y2="320" class="bp-glow" />
+                <line x1="240" y1="200" x2="240" y2="440" class="bp-glow" />
+                <line x1="20" y1="260" x2="240" y2="260" class="bp-glow" />
+                <line x1="20" y1="380" x2="140" y2="380" class="bp-glow" />
+                <polyline points="140,440 140,360 200,360 200,320" class="bp-glow" />
+                <rect x="280" y="240" width="120" height="60" class="bp-glow" />
+                <rect x="320" y="340" width="80" height="100" class="bp-glow" />
+                <circle cx="390" cy="150" r="32" class="bp-glow" />
+              </svg>
+              <figcaption class="slide-title">Huis</figcaption>
+            </figure>
+          </article>
+          <article class="slide" data-location="tuin">
+            <figure class="blueprint-figure" aria-labelledby="title-tuin">
+              <svg
+                class="blueprint-image"
+                viewBox="0 0 480 480"
+                role="img"
+                aria-labelledby="title-tuin desc-tuin"
               >
-                Reset
-              </button>
-              <button
-                type="button"
-                class="blueprint-button"
-                data-blueprint-zoom-in
-                aria-label="Zoom in"
+                <title id="title-tuin">Tuin met bomen en kas</title>
+                <desc id="desc-tuin">
+                  Een blauwdrukstijl van een tuin met boom, hek, moestuinbak en schuurtje.
+                </desc>
+                <path
+                  d="M60 360 H420"
+                  class="bp-glow"
+                  stroke-linecap="round"
+                />
+                <path
+                  d="M120 360 C100 240 200 200 220 260 C240 200 340 240 320 360"
+                  class="bp-glow"
+                  fill="none"
+                />
+                <rect x="280" y="240" width="140" height="120" class="bp-glow" />
+                <polygon points="280,240 350,180 420,240" class="bp-glow" />
+                <rect x="320" y="280" width="44" height="60" class="bp-glow" />
+                <path d="M40 320 H240" class="bp-glow" />
+                <rect x="60" y="300" width="60" height="40" class="bp-glow" />
+                <rect x="140" y="300" width="60" height="40" class="bp-glow" />
+                <line x1="60" y1="300" x2="60" y2="240" class="bp-glow" />
+                <line x1="120" y1="300" x2="120" y2="240" class="bp-glow" />
+                <line x1="180" y1="300" x2="180" y2="240" class="bp-glow" />
+                <line x1="240" y1="300" x2="240" y2="240" class="bp-glow" />
+                <rect x="80" y="340" width="20" height="20" class="bp-glow" />
+                <rect x="110" y="340" width="20" height="20" class="bp-glow" />
+                <rect x="140" y="340" width="20" height="20" class="bp-glow" />
+                <rect x="170" y="340" width="20" height="20" class="bp-glow" />
+              </svg>
+              <figcaption class="slide-title">Tuin</figcaption>
+            </figure>
+          </article>
+          <article class="slide" data-location="garage">
+            <figure class="blueprint-figure" aria-labelledby="title-garage">
+              <svg
+                class="blueprint-image"
+                viewBox="0 0 480 480"
+                role="img"
+                aria-labelledby="title-garage desc-garage"
               >
-                +
-              </button>
-            </div>
-          </header>
-          <div class="blueprint-viewport" data-blueprint-viewport>
-            <div class="blueprint-scene" data-blueprint-scene>
-              <div class="layer layer-home">
-                <h3>Huis</h3>
-                <p>Zoom in om kamers te bekijken</p>
-              </div>
-              <div class="layer layer-garage">
-                <h3>Garage</h3>
-                <p>Voertuigen en gereedschap</p>
-              </div>
-              <div class="layer layer-car">
-                <h3>Auto</h3>
-                <p>Bekijk kofferruimte en dashboard</p>
-              </div>
-              <div class="layer layer-garden">
-                <h3>Tuin</h3>
-                <p>Komende functies voor buitenopslag</p>
-              </div>
-            </div>
-            <p class="blueprint-instructions">
-              Gebruik het scrollwiel of een knijpbeweging om te zoomen. Sleep om te verplaatsen.
-            </p>
-          </div>
-        </section>
-        <section class="quick-actions" aria-label="Snelle acties">
-          <button type="button" class="action primary">
-            <span class="action-icon">＋</span>
-            <span class="action-label">Nieuw item</span>
-          </button>
-          <button type="button" class="action">
-            <span class="action-icon">📷</span>
-            <span class="action-label">Foto maken</span>
-          </button>
-          <button type="button" class="action">
-            <span class="action-icon">✨</span>
-            <span class="action-label">Genereer beeld</span>
-          </button>
-        </section>
-        <nav class="bottom-nav" aria-label="Hoofdmenu">
-          <button type="button" class="nav-button active">
-            <span class="nav-icon">🏠</span>
-            <span class="nav-label">Overzicht</span>
-          </button>
-          <button type="button" class="nav-button">
-            <span class="nav-icon">📦</span>
-            <span class="nav-label">Inventaris</span>
-          </button>
-          <button type="button" class="nav-button">
-            <span class="nav-icon">🛒</span>
-            <span class="nav-label">Suggesties</span>
-          </button>
-          <button type="button" class="nav-button">
-            <span class="nav-icon">⚙️</span>
-            <span class="nav-label">Instellingen</span>
-          </button>
-        </nav>
+                <title id="title-garage">Garage met auto en gereedschap</title>
+                <desc id="desc-garage">
+                  Een blauwdrukstijl van een garage met geopende deur, auto en gereedschap.
+                </desc>
+                <rect x="40" y="180" width="400" height="260" class="bp-glow" />
+                <polyline points="40,180 240,60 440,180" class="bp-glow" stroke-linejoin="round" />
+                <rect x="80" y="220" width="320" height="140" class="bp-glow" />
+                <rect x="120" y="260" width="240" height="100" class="bp-glow" />
+                <line x1="120" y1="320" x2="360" y2="320" class="bp-glow" />
+                <path
+                  d="M150 360 L120 420"
+                  class="bp-glow"
+                  stroke-linecap="round"
+                />
+                <path d="M330 360 L360 420" class="bp-glow" stroke-linecap="round" />
+                <circle cx="170" cy="320" r="20" class="bp-glow" />
+                <circle cx="310" cy="320" r="20" class="bp-glow" />
+                <rect x="360" y="260" width="40" height="80" class="bp-glow" />
+                <line x1="60" y1="360" x2="420" y2="360" class="bp-glow" />
+              </svg>
+              <figcaption class="slide-title">Garage</figcaption>
+            </figure>
+          </article>
+        </div>
+        <div class="slider-dots" role="tablist" aria-label="Locaties">
+          <button type="button" role="tab" aria-selected="true" data-slider-dot="0">Huis</button>
+          <button type="button" role="tab" aria-selected="false" data-slider-dot="1">Tuin</button>
+          <button type="button" role="tab" aria-selected="false" data-slider-dot="2">Garage</button>
+        </div>
       </section>
+      <nav class="slider-controls" aria-label="Navigatie tussen locaties">
+        <button type="button" class="control-button" data-slider-prev aria-label="Vorige locatie">
+          ← Vorige
+        </button>
+        <button type="button" class="control-button" data-slider-next aria-label="Volgende locatie">
+          Volgende →
+        </button>
+      </nav>
     </main>
     <script type="module" src="scripts/main.js"></script>
   </body>

@@ -10,6 +10,21 @@
       href="https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <link
+      rel="preload"
+      as="image"
+      href="https://images.unsplash.com/photo-1600585154340-0ef3c08ec961?auto=format&amp;fit=crop&amp;w=1600&amp;q=80&amp;ixlib=rb-4.0.3&amp;dl=huis.jpg"
+    />
+    <link
+      rel="preload"
+      as="image"
+      href="https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&amp;fit=crop&amp;w=1600&amp;q=80&amp;ixlib=rb-4.0.3&amp;dl=tuin.jpg"
+    />
+    <link
+      rel="preload"
+      as="image"
+      href="https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&amp;fit=crop&amp;w=1600&amp;q=80&amp;ixlib=rb-4.0.3&amp;dl=garage.jpg"
+    />
 
     <style>
 :root {
@@ -134,10 +149,18 @@ button {
   border-radius: clamp(18px, 4vw, 28px);
   border: 1px solid rgba(89, 182, 255, 0.2);
   background-image:
+    linear-gradient(150deg, rgba(4, 13, 28, 0.82), rgba(13, 33, 68, 0.6)),
+    var(
+      --slide-photo,
+      linear-gradient(150deg, rgba(4, 13, 28, 0.85), rgba(13, 33, 68, 0.7))
+    ),
     linear-gradient(90deg, rgba(89, 182, 255, 0.08) 1px, transparent 1px),
     linear-gradient(180deg, rgba(89, 182, 255, 0.08) 1px, transparent 1px);
-  background-size: 40px 40px;
-  opacity: 0.5;
+  background-size: cover, cover, 40px 40px, 40px 40px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-blend-mode: overlay, normal, normal, normal;
+  opacity: 0.6;
   pointer-events: none;
 }
 
@@ -282,7 +305,11 @@ button {
         data-slider-viewport
       >
         <div class="slider-track" data-slider-track>
-          <article class="slide" data-location="huis">
+          <article
+            class="slide"
+            data-location="huis"
+            style="--slide-photo: url('https://images.unsplash.com/photo-1600585154340-0ef3c08ec961?auto=format&amp;fit=crop&amp;w=1600&amp;q=80&amp;ixlib=rb-4.0.3&amp;dl=huis.jpg');"
+          >
             <figure class="blueprint-figure" aria-labelledby="title-huis">
               <svg
                 class="blueprint-image"
@@ -312,7 +339,11 @@ button {
               <figcaption class="slide-title">Huis</figcaption>
             </figure>
           </article>
-          <article class="slide" data-location="tuin">
+          <article
+            class="slide"
+            data-location="tuin"
+            style="--slide-photo: url('https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&amp;fit=crop&amp;w=1600&amp;q=80&amp;ixlib=rb-4.0.3&amp;dl=tuin.jpg');"
+          >
             <figure class="blueprint-figure" aria-labelledby="title-tuin">
               <svg
                 class="blueprint-image"
@@ -352,7 +383,11 @@ button {
               <figcaption class="slide-title">Tuin</figcaption>
             </figure>
           </article>
-          <article class="slide" data-location="garage">
+          <article
+            class="slide"
+            data-location="garage"
+            style="--slide-photo: url('https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&amp;fit=crop&amp;w=1600&amp;q=80&amp;ixlib=rb-4.0.3&amp;dl=garage.jpg');"
+          >
             <figure class="blueprint-figure" aria-labelledby="title-garage">
               <svg
                 class="blueprint-image"

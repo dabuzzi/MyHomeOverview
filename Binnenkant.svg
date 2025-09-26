@@ -1220,9 +1220,10 @@
      inkscape:label="Layer 1">
     <a
        id="gereed01"
-       onclick="&quot;click&quot;"
+       onclick="window.open('https://www.nu.nl','_blank','noopener')"
        onmouseover="&quot;hover&quot;"
-       onmouseup="&quot;up&quot;">
+       onmouseup="&quot;up&quot;"
+       style="fill:#ab0000;fill-opacity:1">
       <desc
          id="desc250">Gereedschap beschrijving</desc>
       <title
@@ -1237,20 +1238,22 @@
          inkscape:label="gereedschap" />
     </a>
     <rect
-       style="fill:#ab0000;fill-opacity:1;stroke:#ff0000"
+       style="fill:none;fill-opacity:1;stroke:none"
        id="plant01"
-       width="30.271078"
+       width="30.271"
        height="18.425873"
        x="288.89139"
        y="409.31763"
-       inkscape:label="plant" />
+       inkscape:label="plant"
+       onclick="window.open('https://www.nu.nl','_blank','noopener')" />
     <ellipse
-       style="fill:#ab0000;fill-opacity:1;stroke:#ff0000"
+       style="fill:none;fill-opacity:1;stroke:#ff0000"
        id="fiets01"
        cx="257.96222"
        cy="468.2146"
-       rx="17.109739"
+       rx="17.110001"
        ry="18.09684"
-       inkscape:label="fiets" />
+       inkscape:label="fiets"
+       onclick="window.open('https://www.nu.nl','_blank','noopener')" />
   </g>
 </svg>

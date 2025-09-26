@@ -1,108 +1,159 @@
-
 <!DOCTYPE html>
 <html lang="nl">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Home Overview</title>
-    <style>
-      :root {
-        color-scheme: light dark;
-      }
-
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-
-      body {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        background: #0d47a1;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      }
-
-      .screen {
-        width: min(100vw, 54rem);
-        aspect-ratio: 9 / 16;
-        background: linear-gradient(180deg, #2196f3 0%, #0d47a1 100%);
-        border-radius: 24px;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-        box-shadow: 0 20px 45px rgba(13, 71, 161, 0.35);
-      }
-
-      .content {
-        flex: 1;
-        display: flex;
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        scrollbar-width: none;
-      }
-
-      .content::-webkit-scrollbar {
-        display: none;
-      }
-
-      .panel {
-        flex: 0 0 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        scroll-snap-align: start;
-        position: relative;
-      }
-
-      .panel img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-      }
-
-      nav {
-        display: flex;
-        justify-content: space-around;
-        align-items: center;
-        padding: 1rem;
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(12px);
-        color: #ffffff;
-        font-weight: 500;
-        letter-spacing: 0.02em;
-      }
-
-      nav span {
-        text-transform: uppercase;
-      }
-    </style>
-  </head>
-  <body>
-    <main class="screen">
-      <section class="content">
-        <div class="panel">
-          <img src="Huis.png" alt="Huis" />
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>App Prototype – Zoom/Fade SVG Stack</title>
+  <style>
+    :root{ --app-bg: transparent; --menubar-height: 64px; --phone-radius: 28px; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; background: #0d0f12; color: #eaeaea; font-family: system-ui, sans-serif; }
+    .wrap { height: 100dvh; display: grid; place-items: center; padding: 2.5vmin; }
+    .phone { aspect-ratio: 9 / 16; width: min(92vw, 56.25vh); background: var(--app-bg); border-radius: var(--phone-radius); box-shadow: 0 30px 80px rgba(0,0,0,.5), 0 6px 18px rgba(0,0,0,.35); overflow: hidden; display: grid; grid-template-rows: 1fr var(--menubar-height); border: 1px solid rgba(255,255,255,.06); }
+    .stage { position: relative; overflow: hidden; touch-action: none; background: transparent; display: grid; place-items: center; }
+    .zoom-content { position: relative; width: 100%; height: 100%; transform-origin: 50% 50%; will-change: transform; image-rendering: optimizeQuality; }
+    .layer { position: absolute; inset: 0; display: grid; place-items: center; transition: opacity 220ms ease; pointer-events: none; }
+    .layer svg { width: 100%; height: 100%; object-fit: contain; pointer-events: auto; }
+    .menubar { display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; padding: 0 12px; background: rgba(10,12,15,.6); backdrop-filter: blur(8px); border-top: 1px solid rgba(255,255,255,.08); }
+    .menu-dot { justify-self: center; width: 8px; height: 8px; border-radius: 999px; background: rgba(255,255,255,.5); }
+    .scale-indicator { position: absolute; right: 10px; top: 10px; z-index: 10; font-size: 12px; padding: 4px 8px; border-radius: 10px; background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.12); display: none; }
+    .svg-button:focus { outline: 2px solid currentColor; outline-offset: 2px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="phone" id="phone">
+      <div class="stage" id="stage">
+        <div class="scale-indicator" id="scaleOut">1.00×</div>
+        <div class="zoom-content" id="zoomContent">
+          <div class="layer" id="layerTuin" style="opacity:1"><!-- inline SVG komt hier --></div>
+          <div class="layer" id="layerSchuur" style="opacity:0"><!-- inline SVG komt hier --></div>
+          <div class="layer" id="layerBinnenkant" style="opacity:0"><!-- inline SVG komt hier --></div>
         </div>
-        <div class="panel">
-          <img src="Tuin.png" alt="Tuin" />
-        </div>
-        <div class="panel">
-          <img src="Garage.png" alt="Garage" />
-        </div>
-      </section>
-      <nav>
-        <span>Home</span>
-        <span>Add</span>
-        <span>Overview</span>
-        <span>Settings</span>
+      </div>
+      <nav class="menubar">
+        <div class="menu-dot"></div><div class="menu-dot"></div><div class="menu-dot"></div><div class="menu-dot"></div><div class="menu-dot"></div>
       </nav>
-    </main>
-  </body>
+    </div>
+  </div>
+  <script>
+    const MIN_SCALE = 1, MAX_SCALE = 6, WHEEL_ZOOM_SPEED = 0.0018;
+    const SCHUUR_FADE_IN_START = 1.6, SCHUUR_FADE_IN_END = 2.4;
+    const BINNEN_FADE_IN_START = 2.8, BINNEN_FADE_IN_END = 4.0;
+    const stage = document.getElementById('stage');
+    const zoomContent = document.getElementById('zoomContent');
+    const layerTuin = document.getElementById('layerTuin');
+    const layerSchuur = document.getElementById('layerSchuur');
+    const layerBinnen = document.getElementById('layerBinnenkant');
+    const scaleOut = document.getElementById('scaleOut');
+
+    let scale=1, originX=0.5, originY=0.5;
+    const clamp=(v,a,b)=>Math.min(Math.max(v,a),b);
+    const invLerp=(a,b,v)=>(v-a)/(b-a);
+
+    // --- Inline loader (http/https). Bij file:// tonen we fallback + melding ---
+    async function loadInlineSVG(url, targetEl){
+      try{
+        const res = await fetch(url, { cache:'no-cache' });
+        if(!res.ok) throw new Error(`HTTP ${res.status}`);
+        const txt = await res.text();
+        const cleaned = txt.replace(/<\?xml[^>]*>/g,'').trim();
+        targetEl.innerHTML = cleaned;
+        const svg = targetEl.querySelector('svg');
+        if(!svg) throw new Error('No <svg>');
+        svg.setAttribute('width','100%');
+        svg.setAttribute('height','100%');
+        svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+        enhanceSvgButtons(svg);
+        return svg;
+      }catch(err){
+        console.warn('Inline load failed for', url, err);
+        targetEl.innerHTML = `<img src="${url}" alt="${url}" style="width:100%;height:100%;object-fit:contain"/>`;
+        showLoadWarning();
+        return null;
+      }
+    }
+
+    function showLoadWarning(){
+      if(document.getElementById('inlineWarn')) return;
+      const note=document.createElement('div');
+      note.id='inlineWarn';
+      note.textContent='Let op: om interactieve SVG’s te laten werken, open dit bestand via http(s) (bijv. lokaal: python -m http.server).';
+      Object.assign(note.style,{position:'absolute',left:'12px',right:'12px',bottom:'80px',background:'rgba(0,0,0,0.65)',color:'#fff',padding:'10px 12px',border:'1px solid rgba(255,255,255,0.2)',borderRadius:'10px',fontSize:'12px',zIndex:50});
+      stage.appendChild(note); setTimeout(()=>note.remove(),6000);
+    }
+
+    function enhanceSvgButtons(svg){
+      const btns = svg.querySelectorAll('[data-action], [role="button"], .btn, .button, a');
+      btns.forEach(el=>{
+        el.classList.add('svg-button');
+        if(!el.hasAttribute('tabindex')) el.setAttribute('tabindex','0');
+        if(!el.hasAttribute('role')) el.setAttribute('role','button');
+        el.style.cursor='pointer';
+        // Open nu.nl in nieuw tabblad
+        el.addEventListener('click', (e)=>{e.preventDefault(); window.open('https://www.nu.nl','_blank','noopener');});
+        el.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); window.open('https://www.nu.nl','_blank','noopener'); }});
+      });
+    }
+
+    function updateOpacity(){
+      layerTuin.style.opacity=1;
+      layerSchuur.style.opacity = (scale<=SCHUUR_FADE_IN_START) ? 0 : (scale>=SCHUUR_FADE_IN_END) ? 1 : clamp(invLerp(SCHUUR_FADE_IN_START,SCHUUR_FADE_IN_END,scale),0,1);
+      layerBinnen.style.opacity = (scale<=BINNEN_FADE_IN_START) ? 0 : (scale>=BINNEN_FADE_IN_END) ? 1 : clamp(invLerp(BINNEN_FADE_IN_START,BINNEN_FADE_IN_END,scale),0,1);
+      // Alleen zichtbare lagen laten klikken
+      [layerTuin, layerSchuur, layerBinnen].forEach(layer=>{
+        const svg=layer.querySelector('svg');
+        if(svg) svg.style.pointerEvents = (parseFloat(layer.style.opacity||'0')>0.02) ? 'auto':'none';
+      });
+    }
+
+    function applyTransform(){
+      zoomContent.style.transformOrigin=`${(originX*100).toFixed(3)}% ${(originY*100).toFixed(3)}%`;
+      zoomContent.style.transform=`scale(${scale.toFixed(4)})`;
+      scaleOut.textContent=`${scale.toFixed(2)}×`;
+    }
+
+    function setScale(next,ox,oy){
+      scale = clamp(next,MIN_SCALE,MAX_SCALE);
+      if(typeof ox==='number') originX=clamp(ox,0,1);
+      if(typeof oy==='number') originY=clamp(oy,0,1);
+      updateOpacity();
+      applyTransform();
+    }
+
+    // Wheel & pinch: capture-phase zodat events niet blijven hangen op SVG
+    stage.addEventListener('wheel', (e)=>{
+      e.preventDefault();
+      const r=stage.getBoundingClientRect();
+      const px=(e.clientX-r.left)/r.width; const py=(e.clientY-r.top)/r.height;
+      const d=-e.deltaY*WHEEL_ZOOM_SPEED; setScale(scale*(1+d),px,py);
+    }, { passive:false, capture:true });
+
+    const active=new Map();
+    const getCentroid=()=>{let sx=0,sy=0;const arr=[...active.values()];for(const p of arr){sx+=p.x;sy+=p.y;}return {x:sx/arr.length,y:sy/arr.length}};
+    const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+    let pinchStartDist=0,pinchStartScale=1;
+
+    function onPointerDown(e){ stage.setPointerCapture(e.pointerId); active.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(active.size===2){ const [p1,p2]=[...active.values()]; pinchStartDist=dist(p1,p2); pinchStartScale=scale; const r=stage.getBoundingClientRect(); const c=getCentroid(); originX=(c.x-r.left)/r.width; originY=(c.y-r.top)/r.height; } }
+    function onPointerMove(e){ if(!active.has(e.pointerId)) return; active.set(e.pointerId,{x:e.clientX,y:e.clientY}); if(active.size===2){ const [p1,p2]=[...active.values()]; const d=dist(p1,p2); setScale(pinchStartScale*(d/(pinchStartDist||d))); } }
+    function onPointerUp(e){ if(active.has(e.pointerId)) active.delete(e.pointerId); }
+
+    stage.addEventListener('pointerdown', onPointerDown, {capture:true});
+    stage.addEventListener('pointermove', onPointerMove, {capture:true});
+    stage.addEventListener('pointerup', onPointerUp, {capture:true});
+    stage.addEventListener('pointercancel', onPointerUp, {capture:true});
+    stage.addEventListener('pointerleave', onPointerUp, {capture:true});
+
+    // Double-tap to zoom
+    let lastTap=0; stage.addEventListener('click',(e)=>{ const now=Date.now(); if(now-lastTap<300){ const r=stage.getBoundingClientRect(); const px=(e.clientX-r.left)/r.width; const py=(e.clientY-r.top)/r.height; setScale(scale<2?2:1,px,py); } lastTap=now; }, {capture:true});
+
+    (async function(){
+      await loadInlineSVG('Tuin.svg', layerTuin);
+      await loadInlineSVG('Schuur.svg', layerSchuur);
+      await loadInlineSVG('Binnenkant.svg', layerBinnen);
+      updateOpacity();
+      applyTransform();
+    })();
+  </script>
+</body>
 </html>
-
-
-

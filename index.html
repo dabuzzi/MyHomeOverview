@@ -12,7 +12,7 @@
     .phone { aspect-ratio: 9 / 16; width: min(92vw, 56.25vh); background: var(--app-bg); border-radius: var(--phone-radius); box-shadow: 0 30px 80px rgba(0,0,0,.5), 0 6px 18px rgba(0,0,0,.35); overflow: hidden; display: grid; grid-template-rows: 1fr var(--menubar-height); border: 1px solid rgba(255,255,255,.06); }
     .stage { position: relative; overflow: hidden; touch-action: none; background: transparent; display: grid; place-items: center; }
 
-    .zoom-content { position: relative; width: 100%; height: 100%; transform-origin: 50% 50%; will-change: transform; image-rendering: optimizeQuality; }
+    .zoom-content { position: relative; width: 100%; height: 100%; transform-origin: 0 0; will-change: transform; image-rendering: optimizeQuality; }
 
     /* --- Scenes wrapper slides horizontaal --- */
     .scenes { position: absolute; inset: 0; display: grid; grid-auto-flow: column; grid-auto-columns: 100%; height: 100%; width: 100%; transform: translateX(0%); }
@@ -20,7 +20,7 @@
 
     .scene { position: relative; width: 100%; height: 100%; }
     .layer { position: absolute; inset: 0; display: grid; place-items: center; transition: opacity 220ms ease; pointer-events: none; }
-    .layer svg { width: 100%; height: 100%; object-fit: contain; pointer-events: auto; }
+    .layer svg { width: 100%; height: 100%; object-fit: contain; pointer-events: auto; vector-effect: non-scaling-stroke; shape-rendering: geometricPrecision; }
 
     .menubar { display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; padding: 0 12px; background: rgba(10,12,15,.6); backdrop-filter: blur(8px); border-top: 1px solid rgba(255,255,255,.08); }
     .menu-dot { justify-self: center; width: 8px; height: 8px; border-radius: 999px; background: rgba(255,255,255,.5); }
@@ -35,7 +35,7 @@
 <body>
   <div class="wrap">
     <div class="phone" id="phone">
-      <div class="stage" id="stage">
+      <div class="stage" id="stage" tabindex="0" aria-label="Scènes: sleep met muis om te wisselen; Spatie wisselt scène; scroll/pinch om te zoomen">
         <div class="scale-indicator" id="scaleOut">1.00×</div>
         <div class="zoom-content" id="zoomContent">
           <div class="scenes anim" id="scenes">
@@ -88,6 +88,8 @@
     const scaleOut = document.getElementById('scaleOut');
 
     let scale=1, originX=0.5, originY=0.5;
+    // Pan-translate zodat we op een ankerpunt kunnen zoomen zonder verspringen
+    let tx=0, ty=0;
     let sceneIndex = 0; // 0: tuin, 1: huis
 
     const clamp=(v,a,b)=>Math.min(Math.max(v,a),b);
@@ -164,16 +166,28 @@
     }
 
     function applyTransform(){
-      zoomContent.style.transformOrigin=`${(originX*100).toFixed(3)}% ${(originY*100).toFixed(3)}%`;
+      // translate eerst, dan scale, met origin 0,0
+      zoomContent.style.transform = `translate(${tx.toFixed(3)}px, ${ty.toFixed(3)}px) scale(${scale.toFixed(4)})`;
+      const scaleOut = document.getElementById('scaleOut');
+      if (scaleOut) scaleOut.textContent=`${scale.toFixed(2)}×`;
+    }% ${(originY*100).toFixed(3)}%`;
       zoomContent.style.transform=`scale(${scale.toFixed(4)})`;
       const scaleOut = document.getElementById('scaleOut');
       if (scaleOut) scaleOut.textContent=`${scale.toFixed(2)}×`;
     }
 
-    function setScale(next,ox,oy){
-      scale = clamp(next,MIN_SCALE,MAX_SCALE);
-      if(typeof ox==='number') originX=clamp(ox,0,1);
-      if(typeof oy==='number') originY=clamp(oy,0,1);
+    function setScale(next, anchorX=null, anchorY=null){
+      const prev = scale;
+      scale = clamp(next, MIN_SCALE, MAX_SCALE);
+      // Houd het wereldpunt onder de cursor vast
+      if (anchorX !== null && anchorY !== null){
+        // scherm->wereld
+        const ux = (anchorX - tx) / prev;
+        const uy = (anchorY - ty) / prev;
+        // nieuwe tx/ty zodat (ux,uy) onder dezelfde schermpositie blijft
+        tx = anchorX - scale * ux;
+        ty = anchorY - scale * uy;
+      }
       updateOpacity();
       applyTransform();
     }
@@ -189,9 +203,10 @@
       sceneIndex = clamp(nextIndex, 0, 1);
       scenesWrap.classList.toggle('anim', !!animate);
       scenesWrap.style.transform = `translateX(${-sceneIndex*100}%)`;
-      // reset zoom bij scene-wissel voor consistente fade (optioneel)
-      setScale(1);
-      // update chip label
+      // reset view (optioneel weghalen om pan/zoom te bewaren)
+      scale = 1; tx = 0; ty = 0;
+      updateOpacity();
+      applyTransform();
       const chip = document.getElementById('chip');
       if (chip) chip.textContent = sceneIndex===0 ? 'Tuin' : 'Huis';
     }
@@ -200,66 +215,67 @@
     stage.addEventListener('wheel', (e)=>{
       e.preventDefault();
       const r=stage.getBoundingClientRect();
-      const px=(e.clientX-r.left)/r.width; const py=(e.clientY-r.top)/r.height;
-      const d=-e.deltaY*WHEEL_ZOOM_SPEED; setScale(scale*(1+d),px,py);
+      const ax = e.clientX - r.left; // anchor px in stage
+      const ay = e.clientY - r.top;
+      const d=-e.deltaY*WHEEL_ZOOM_SPEED;
+      const next = scale * (1 + d);
+      setScale(next, ax, ay);
     }, { passive:false, capture:true });
 
-    // Pinch zoom / Swipe
+    // Pinch zoom + Mouse drag (geen touch swipe)
     const active = new Map();
     const getCentroid=()=>{let sx=0,sy=0;const arr=[...active.values()];for(const p of arr){sx+=p.x;sy+=p.y;}return {x:sx/arr.length,y:sy/arr.length}};
     const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
     let pinchStartDist=0,pinchStartScale=1;
 
+    let dragActive=false; let dragStartX=0; let dragDX=0;
+
     stage.addEventListener('pointerdown', (e)=>{
       stage.setPointerCapture(e.pointerId);
-      active.set(e.pointerId,{x:e.clientX,y:e.clientY});
-      if (active.size===1 && scale <= SWIPE_MIN_SCALE){
-        swipeActive = true; swipeStartX = e.clientX; swipeDX = 0; scenesWrap.classList.remove('anim');
+      active.set(e.pointerId,{x:e.clientX,y:e.clientY,type:e.pointerType,button:e.button});
+      // Start muis-klik-slepen alleen bij linker muisknop en bijna uitgezoomd
+      if (e.pointerType==='mouse' && e.button===0 && scale <= SWIPE_MIN_SCALE){
+        dragActive = true; dragStartX = e.clientX; dragDX = 0; scenesWrap.classList.remove('anim');
       }
-      if (active.size===2){
-        const [p1, p2] = [...active.values()];
-        pinchStartDist = dist(p1,p2);
-        pinchStartScale = scale;
-        const r=stage.getBoundingClientRect(); const c=getCentroid();
-        originX=(c.x-r.left)/r.width; originY=(c.y-r.top)/r.height;
-        swipeActive = false; // pinch heeft voorrang
-      }
-    }, {capture:true});
-
-    stage.addEventListener('pointermove', (e)=>{
-      if (!active.has(e.pointerId)) return;
-      active.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      // Pinch start bij 2 pointers (ongeacht type)
       if (active.size===2){
         const [p1,p2]=[...active.values()];
         const d=dist(p1,p2);
-        setScale(pinchStartScale*(d/(pinchStartDist||d)));
+        const r=stage.getBoundingClientRect();
+        const c=getCentroid();
+        const ax = c.x - r.left; const ay = c.y - r.top; // pinch centroid als anker
+        const next = pinchStartScale*(d/(pinchStartDist||d));
+        setScale(next, ax, ay);
         return;
       }
-      if (swipeActive && active.size===1){
-        swipeDX = e.clientX - swipeStartX;
+      if (dragActive && e.pointerType==='mouse'){
+        dragDX = e.clientX - dragStartX;
         const w = stage.clientWidth;
-        const pct = (-sceneIndex*100) + (-swipeDX / w * 100);
+        const pct = (-sceneIndex*100) + (-dragDX / w * 100);
         scenesWrap.style.transform = `translateX(${pct}%)`;
       }
     }, {capture:true});
 
     function endPointer(e){
       if (active.has(e.pointerId)) active.delete(e.pointerId);
-      if (swipeActive && active.size===0){
+      if (dragActive && (e.pointerType==='mouse' || active.size===0)){
         scenesWrap.classList.add('anim');
-        if (Math.abs(swipeDX) > SWIPE_THRESHOLD_PX){
-          if (swipeDX < 0 && sceneIndex < 1) { setScene(sceneIndex+1); suppressClicks(); }
-          else if (swipeDX > 0 && sceneIndex > 0) { setScene(sceneIndex-1); suppressClicks(); }
-          else setScene(sceneIndex); // snap back
-        } else {
-          setScene(sceneIndex); // snap back
-        }
-        swipeActive = false; swipeDX = 0;
+        if (Math.abs(dragDX) > SWIPE_THRESHOLD_PX){
+          if (dragDX < 0 && sceneIndex < 1) { setScene(sceneIndex+1); suppressClicks(); }
+          else if (dragDX > 0 && sceneIndex > 0) { setScene(sceneIndex-1); suppressClicks(); }
+          else setScene(sceneIndex);
+        } else { setScene(sceneIndex); }
+        dragActive = false; dragDX = 0;
       }
     }
     stage.addEventListener('pointerup', endPointer, {capture:true});
     stage.addEventListener('pointercancel', endPointer, {capture:true});
     stage.addEventListener('pointerleave', endPointer, {capture:true});
+
+    // Toetsenbord: Spatie toggelt tussen scènes
+    stage.addEventListener('keydown', (e)=>{
+      if (e.code==='Space' || e.key===' ') { e.preventDefault(); setScene(sceneIndex===0?1:0); }
+    }, {capture:true});
 
     // Double-tap to zoom toggle
     let lastTap=0;
@@ -272,12 +288,13 @@
       await loadInlineSVG('Schuur.svg', layerSchuur);
       await loadInlineSVG('Binnenkant.svg', layerBinnen);
       // Scene 1
-      await loadInlineSVG('Huis.svg', layerHuis);
-      await loadInlineSVG('Woonkamer.svg', layerWoonkamer);
-      await loadInlineSVG('Dessoir.svg', layerDessoir);
+      await loadInlineSVG('huis.svg', layerHuis);
+      await loadInlineSVG('woonkamer.svg', layerWoonkamer);
+      await loadInlineSVG('dessoir.svg', layerDessoir);
       updateOpacity();
       applyTransform();
       setScene(1, false); // start met HUIS als eerste zichtbare scene
+      try{ stage.focus({preventScroll:true}); }catch{}
     })();
   </script>
 </body>

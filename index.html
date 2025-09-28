@@ -30,6 +30,17 @@
 
     /* hint voor scene-indicator (optioneel) */
     .scene-chip { position: absolute; left: 10px; top: 10px; z-index: 10; font-size: 12px; padding: 4px 8px; border-radius: 10px; background: rgba(0,0,0,.35); border: 1px solid rgba(255,255,255,.12); }
+  .hotspot-ring { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+      width: 96px; height: 96px; border-radius: 999px; background: transparent; color: #fff;
+      display: grid; place-items: center; font-weight: 700; font-size: 12px;
+      border: 3px solid rgba(255,255,255,.95); box-shadow: 0 0 0 6px rgba(255,255,255,.18), 0 8px 24px rgba(0,0,0,.45);
+      cursor: pointer; user-select: none; backdrop-filter: blur(2px);
+    }
+    .hotspot-ring::after { content: 'NU'; font-size: 14px; letter-spacing: 0.08em; background: rgba(0,0,0,.55); padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,.25); }
+    .hotspot-ring:hover { box-shadow: 0 0 0 8px rgba(255,255,255,.26), 0 10px 28px rgba(0,0,0,.55); }
+    .hotspot-ring:focus { outline: 2px solid #fff; outline-offset: 2px; }
+    .hotspot:hover { background: rgba(0,0,0,.7); }
+    .hotspot:focus { outline: 2px solid #fff; outline-offset: 2px; }
   </style>
 </head>
 <body>
@@ -84,6 +95,16 @@
     const layerHuis = document.getElementById('layerHuis');
     const layerWoonkamer = document.getElementById('layerWoonkamer');
     const layerDessoir = document.getElementById('layerDessoir');
+    // Dessoir-hotspot (nu.nl)
+    const hotspot = document.createElement('button');
+    hotspot.className = 'hotspot-ring';
+    hotspot.type = 'button';
+    hotspot.title = 'Open NU.nl in nieuw tabblad';
+    hotspot.setAttribute('aria-label','Open NU.nl');
+    hotspot.style.display = 'none';
+    hotspot.addEventListener('click', (e)=>{ e.preventDefault(); window.open('https://www.nu.nl','_blank','noopener'); });
+    hotspot.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); window.open('https://www.nu.nl','_blank','noopener'); }});
+    layerDessoir.appendChild(hotspot);
 
     const scaleOut = document.getElementById('scaleOut');
 
@@ -109,6 +130,7 @@
         svg.setAttribute('height','100%');
         svg.setAttribute('preserveAspectRatio','xMidYMid meet');
         enhanceSvgButtons(svg);
+        analyzeSvg(svg, url);
         return svg;
       }catch(err){
         console.warn('Inline load failed for', url, err);
@@ -131,7 +153,28 @@
     const suppressClicks = (ms=500)=>{ suppressClicksUntil = Date.now() + ms; };
     const shouldSuppressClick = ()=> Date.now() < suppressClicksUntil;
 
+    function analyzeSvg(svg, name){
+      try {
+        const imgs = svg.querySelectorAll('image');
+        if (imgs.length) {
+          console.warn(`[${name}] bevat ${imgs.length} raster <image>-element(en). Bij ver inzoomen kan dit onscherp lijken als de bronresolutie laag is.`);
+        }
+      } catch {}
+    }
+
     function enhanceSvgButtons(svg){
+      // Verbeter scherpte (ook als er <image> bitmaps in de SVG zitten)
+      try {
+        svg.style.shapeRendering = 'geometricPrecision';
+        svg.style.textRendering = 'optimizeLegibility';
+        svg.style.imageRendering = 'optimizeQuality';
+        // Forceer crisper rendering voor embedded bitmaps
+        svg.querySelectorAll('image').forEach(imgEl => {
+          imgEl.style.imageRendering = 'crisp-edges';
+          imgEl.style.imageRendering = 'pixelated'; // fallback voor sommige engines
+        });
+      } catch {}
+
       const btns = svg.querySelectorAll('[data-action], [role="button"], .btn, .button, a');
       btns.forEach(el=>{
         el.classList.add('svg-button');
@@ -149,19 +192,26 @@
     // --- Opacity per scene ---
     function updateOpacity(){
       if (sceneIndex === 0){
-        layerTuin && (layerTuin.style.opacity = 1);
-        layerSchuur && (layerSchuur.style.opacity = (scale<=SCHUUR_FADE_IN_START) ? 0 : (scale>=SCHUUR_FADE_IN_END) ? 1 : clamp(invLerp(SCHUUR_FADE_IN_START,SCHUUR_FADE_IN_END,scale),0,1));
-        layerBinnen && (layerBinnen.style.opacity = (scale<=BINNEN_FADE_IN_START) ? 0 : (scale>=BINNEN_FADE_IN_END) ? 1 : clamp(invLerp(BINNEN_FADE_IN_START,BINNEN_FADE_IN_END,scale),0,1));
-        // disable clicks on hidden scene 1
-        [layerHuis, layerWoonkamer, layerDessoir].forEach(l=>{ if(!l) return; const svg=l.querySelector('svg'); if(svg) svg.style.pointerEvents='none'; });
+        // Scene Tuin
+        if (layerTuin) layerTuin.style.opacity = 1;
+        if (layerSchuur) layerSchuur.style.opacity = (scale<=SCHUUR_FADE_IN_START) ? 0 : (scale>=SCHUUR_FADE_IN_END) ? 1 : clamp(invLerp(SCHUUR_FADE_IN_START,SCHUUR_FADE_IN_END,scale),0,1);
+        if (layerBinnen) layerBinnen.style.opacity = (scale<=BINNEN_FADE_IN_START) ? 0 : (scale>=BINNEN_FADE_IN_END) ? 1 : clamp(invLerp(BINNEN_FADE_IN_START,BINNEN_FADE_IN_END,scale),0,1);
+        // Klikken alleen op zichtbare scene 0
         [layerTuin, layerSchuur, layerBinnen].forEach(layer=>{ const svg=layer?.querySelector('svg'); if(svg) svg.style.pointerEvents = (parseFloat(layer.style.opacity||'0')>0.02) ? 'auto':'none'; });
+        [layerHuis, layerWoonkamer, layerDessoir].forEach(l=>{ const svg=l?.querySelector('svg'); if(svg) svg.style.pointerEvents='none'; });
+        if (hotspot) hotspot.style.display = 'none';
       } else {
-        layerHuis && (layerHuis.style.opacity = 1);
-        layerWoonkamer && (layerWoonkamer.style.opacity = (scale<=WOONKAMER_FADE_IN_START) ? 0 : (scale>=WOONKAMER_FADE_IN_END) ? 1 : clamp(invLerp(WOONKAMER_FADE_IN_START,WOONKAMER_FADE_IN_END,scale),0,1));
-        layerDessoir && (layerDessoir.style.opacity = (scale<=DESSOIR_FADE_IN_START) ? 0 : (scale>=DESSOIR_FADE_IN_END) ? 1 : clamp(invLerp(DESSOIR_FADE_IN_START,DESSOIR_FADE_IN_END,scale),0,1));
-        // disable clicks on hidden scene 0
-        [layerTuin, layerSchuur, layerBinnen].forEach(l=>{ if(!l) return; const svg=l.querySelector('svg'); if(svg) svg.style.pointerEvents='none'; });
+        // Scene Huis
+        if (layerHuis) layerHuis.style.opacity = 1;
+        if (layerWoonkamer) layerWoonkamer.style.opacity = (scale<=WOONKAMER_FADE_IN_START) ? 0 : (scale>=WOONKAMER_FADE_IN_END) ? 1 : clamp(invLerp(WOONKAMER_FADE_IN_START,WOONKAMER_FADE_IN_END,scale),0,1);
+        if (layerDessoir) layerDessoir.style.opacity = (scale<=DESSOIR_FADE_IN_START) ? 0 : (scale>=DESSOIR_FADE_IN_END) ? 1 : clamp(invLerp(DESSOIR_FADE_IN_START,DESSOIR_FADE_IN_END,scale),0,1);
+        // Klikken alleen op zichtbare scene 1
         [layerHuis, layerWoonkamer, layerDessoir].forEach(layer=>{ const svg=layer?.querySelector('svg'); if(svg) svg.style.pointerEvents = (parseFloat(layer.style.opacity||'0')>0.02) ? 'auto':'none'; });
+        [layerTuin, layerSchuur, layerBinnen].forEach(l=>{ const svg=l?.querySelector('svg'); if(svg) svg.style.pointerEvents='none'; });
+        if (hotspot){
+          const vis = parseFloat(layerDessoir?.style.opacity || '0') > 0.9;
+          hotspot.style.display = vis ? 'grid' : 'none';
+        }
       }
     }
 
@@ -169,28 +219,34 @@
       // translate eerst, dan scale, met origin 0,0
       zoomContent.style.transform = `translate(${tx.toFixed(3)}px, ${ty.toFixed(3)}px) scale(${scale.toFixed(4)})`;
       const scaleOut = document.getElementById('scaleOut');
-      if (scaleOut) scaleOut.textContent=`${scale.toFixed(2)}×`;
-    }% ${(originY*100).toFixed(3)}%`;
-      zoomContent.style.transform=`scale(${scale.toFixed(4)})`;
-      const scaleOut = document.getElementById('scaleOut');
-      if (scaleOut) scaleOut.textContent=`${scale.toFixed(2)}×`;
+      if (scaleOut) scaleOut.textContent = `${scale.toFixed(2)}×`;
     }
 
     function setScale(next, anchorX=null, anchorY=null){
       const prev = scale;
-      scale = clamp(next, MIN_SCALE, MAX_SCALE);
+      let target = clamp(next, MIN_SCALE, MAX_SCALE);
+
+      // Als we aan het uitzoomen zijn en we zitten bijna op 1: snap terug naar de beginstand
+      if (target <= 1.05 && target < prev) {
+        scale = 1; tx = 0; ty = 0; // recentreer scene
+        updateOpacity();
+        applyTransform();
+        return;
+      }
+
+      scale = target;
+
       // Houd het wereldpunt onder de cursor vast
       if (anchorX !== null && anchorY !== null){
-        // scherm->wereld
         const ux = (anchorX - tx) / prev;
         const uy = (anchorY - ty) / prev;
-        // nieuwe tx/ty zodat (ux,uy) onder dezelfde schermpositie blijft
         tx = anchorX - scale * ux;
         ty = anchorY - scale * uy;
       }
       updateOpacity();
       applyTransform();
     }
+
 
     // --- Swipe/scene wissel ---
     let swipeActive = false;
@@ -222,37 +278,25 @@
       setScale(next, ax, ay);
     }, { passive:false, capture:true });
 
-    // Pinch zoom + Mouse drag (geen touch swipe)
+    // Pinch zoom + Mouse drag (geen touch swipe) – CLEAN STATE
     const active = new Map();
     const getCentroid=()=>{let sx=0,sy=0;const arr=[...active.values()];for(const p of arr){sx+=p.x;sy+=p.y;}return {x:sx/arr.length,y:sy/arr.length}};
     const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
     let pinchStartDist=0,pinchStartScale=1;
 
-    let dragActive=false; let dragStartX=0; let dragDX=0;
+    let dragActive=false; let dragStartX=0; let dragDX=0; // scene-drag
 
     stage.addEventListener('pointerdown', (e)=>{
       stage.setPointerCapture(e.pointerId);
       active.set(e.pointerId,{x:e.clientX,y:e.clientY,type:e.pointerType,button:e.button});
-      // Start muis-klik-slepen alleen bij linker muisknop en bijna uitgezoomd
       if (e.pointerType==='mouse' && e.button===0 && scale <= SWIPE_MIN_SCALE){
         dragActive = true; dragStartX = e.clientX; dragDX = 0; scenesWrap.classList.remove('anim');
       }
-      // Pinch start bij 2 pointers (ongeacht type)
       if (active.size===2){
-        const [p1,p2]=[...active.values()];
-        const d=dist(p1,p2);
-        const r=stage.getBoundingClientRect();
-        const c=getCentroid();
-        const ax = c.x - r.left; const ay = c.y - r.top; // pinch centroid als anker
-        const next = pinchStartScale*(d/(pinchStartDist||d));
-        setScale(next, ax, ay);
-        return;
-      }
-      if (dragActive && e.pointerType==='mouse'){
-        dragDX = e.clientX - dragStartX;
-        const w = stage.clientWidth;
-        const pct = (-sceneIndex*100) + (-dragDX / w * 100);
-        scenesWrap.style.transform = `translateX(${pct}%)`;
+        const [p1, p2] = [...active.values()];
+        pinchStartDist = dist(p1,p2);
+        pinchStartScale = scale;
+        dragActive = false;
       }
     }, {capture:true});
 
@@ -268,6 +312,29 @@
         dragActive = false; dragDX = 0;
       }
     }
+    stage.addEventListener('pointermove', (e)=>{
+      if (!active.has(e.pointerId)) return;
+      active.set(e.pointerId,{x:e.clientX,y:e.clientY,type:e.pointerType});
+      // Pinch: twee pointers -> schaal op centroid
+      if (active.size===2){
+        const [p1,p2]=[...active.values()];
+        const d=dist(p1,p2);
+        const r=stage.getBoundingClientRect();
+        const c=getCentroid();
+        const ax=c.x - r.left; const ay=c.y - r.top; // pinch centroid als anker
+        const next = pinchStartScale*(d/(pinchStartDist||d));
+        setScale(next, ax, ay);
+        return;
+      }
+      // Drag slide tussen scenes
+      if (dragActive && e.pointerType==='mouse'){
+        dragDX = e.clientX - dragStartX;
+        const w = stage.clientWidth;
+        const pct = (-sceneIndex*100) + (-dragDX / w * 100);
+        scenesWrap.style.transform = `translateX(${pct}%)`;
+      }
+    }, {capture:true});
+
     stage.addEventListener('pointerup', endPointer, {capture:true});
     stage.addEventListener('pointercancel', endPointer, {capture:true});
     stage.addEventListener('pointerleave', endPointer, {capture:true});
